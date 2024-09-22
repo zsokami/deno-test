@@ -1,8 +1,8 @@
 import type { Handler } from '@/types.ts'
 
 const handlerMap: Map<string, string | Handler> = new Map([
-  ['deno-ver', './deno-ver/main.ts'],
-  ['count', './count/main.ts'],
+  ['deno-ver', 'deno-ver/main.ts'],
+  ['count', 'count/main.ts'],
 ])
 
 Deno.serve(async (req, info) => {
@@ -11,7 +11,7 @@ Deno.serve(async (req, info) => {
   let handler
   if (key && (handler = handlerMap.get(key))) {
     if (typeof handler === 'string') {
-      handler = (await import(handler)).handler as Handler
+      handler = (await import(`./${handler}`)).handler as Handler
       handlerMap.set(key, handler)
     }
     const resp = await handler(req, info)
