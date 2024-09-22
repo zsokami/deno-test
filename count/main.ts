@@ -3,18 +3,18 @@ import { acceptsLanguages } from '@std/http/negotiation'
 
 const count: Map<string, number> = new Map()
 
-export const handler: Handler = (req, { remoteAddr: { hostname: rHostname, port: rPort } }) => {
+export const handler: Handler = async (req, { remoteAddr: { hostname: rHostname, port: rPort } }) => {
   if (rHostname.includes(':')) {
     rHostname = `[${rHostname}]`
   }
   const key = `${rHostname}:${rPort}`
   count.set(key, (count.get(key) ?? 0) + 1)
 
-  let html = Deno.readTextFileSync('index.html')
-  html = html.replace(/ lang="zh"|(<(\w+) id="(\w+)"[^>]*>)(<\/\2>)/g, (...m) => {
-    if (m[0] === ' lang="zh"') {
+  let html = await (await fetch(new URL('index.html', import.meta.url))).text()
+  html = html.replace(/<html lang="zh"|(<(\w+) id="(\w+)"[^>]*>)(<\/\2>)/g, (...m) => {
+    if (m[0] === '<html lang="zh"') {
       const lang = acceptsLanguages(req, 'zh', 'en') ?? 'en'
-      return lang === 'zh' ? m[0] : ' lang="en"'
+      return lang === 'zh' ? m[0] : '<html lang="en"'
     }
     if (m[3] === 'output') {
       return m[1] + [...count].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join('') + m[4]
