@@ -1,0 +1,12 @@
+{
+  "fmt": {
+    "lineWidth": 119,
+    "semiColons": false,
+    "singleQuote": true
+  },
+  "imports": {
+    "@/": "./",
+    "@std/http": "jsr:@std/http@^1.0.6"
+  },
+  "lock": false
+}
