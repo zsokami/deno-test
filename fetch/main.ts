@@ -1,6 +1,6 @@
 import type { Handler } from '@/types.ts'
 
-const headersToExclude = new Set(['host', 'traceparent', 'cdn-loop'])
+const headersToExclude = new Set(['host', 'traceparent'])
 
 export const handler: Handler = (req) => {
   const m = req.url.match(/\/fetch\/+(.*)/)
