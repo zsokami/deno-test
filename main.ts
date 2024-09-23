@@ -4,6 +4,7 @@ const handlerMap: Map<string, string | Handler> = new Map([
   ['deno-ver', 'deno-ver/main.ts'],
   ['count', 'count/main.ts'],
   ['accepts', 'accepts/main.ts'],
+  ['fetch', 'fetch/main.ts'],
 ])
 
 Deno.serve(async (req, info) => {
