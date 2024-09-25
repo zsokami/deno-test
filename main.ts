@@ -7,7 +7,7 @@ const handlerMap: Map<string, string | Handler> = new Map([
   ['fetch', 'fetch/main.ts'],
 ])
 
-Deno.serve({
+const { addr } = Deno.serve({
   hostname: '::',
   port: 8100,
 }, async (req, info) => {
@@ -19,7 +19,7 @@ Deno.serve({
       handler = (await import(`./${handler}`)).handler as Handler
       handlerMap.set(key, handler)
     }
-    const resp = await handler(req, info)
+    const resp = await handler(req, { ...info, addr })
     if (resp instanceof Response) {
       return resp
     }
