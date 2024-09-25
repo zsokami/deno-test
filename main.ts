@@ -19,7 +19,8 @@ const { addr } = Deno.serve({
       handler = (await import(`./${handler}`)).handler as Handler
       handlerMap.set(key, handler)
     }
-    const resp = await handler(req, { ...info, addr })
+    console.log(addr)
+    const resp = await handler(req, { remoteAddr: info.remoteAddr, completed: info.completed, addr })
     if (resp instanceof Response) {
       return resp
     }
