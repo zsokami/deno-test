@@ -7,7 +7,7 @@ const handlerMap: Map<string, string | Handler> = new Map([
   ['fetch', 'fetch/main.ts'],
 ])
 
-Deno.serve(async (req, info) => {
+Deno.serve({ port: 8100 }, async (req, info) => {
   const url = new URL(req.url)
   const key = url.pathname.match(/[^/]+/)?.[0]
   let handler
