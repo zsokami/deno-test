@@ -10,6 +10,10 @@ const handlerMap: Map<string, string | Handler> = new Map([
 const { addr } = Deno.serve({
   hostname: Deno.env.get('IP'),
   port: Number(Deno.env.get('PORT')) || undefined,
+  onError(e) {
+    console.error(e)
+    return new Response('500 Internal Server Error', { status: 500 })
+  }
 }, async (req, info) => {
   const url = new URL(req.url)
   const key = url.pathname.match(/[^/]+/)?.[0]
@@ -24,5 +28,5 @@ const { addr } = Deno.serve({
       return resp
     }
   }
-  return new Response(null, { status: 404 })
+  return new Response('404 Not Found', { status: 404 })
 })
