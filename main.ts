@@ -8,8 +8,8 @@ const handlerMap: Map<string, string | Handler> = new Map([
 ])
 
 const { addr } = Deno.serve({
-  hostname: '::',
-  port: 8100,
+  hostname: Deno.env.get('IP'),
+  port: Number(Deno.env.get('PORT')) || undefined,
 }, async (req, info) => {
   const url = new URL(req.url)
   const key = url.pathname.match(/[^/]+/)?.[0]
