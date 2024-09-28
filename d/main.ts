@@ -22,6 +22,11 @@ export const handler: Handler = (req) => {
         } while (controller.desiredSize > 0)
       },
     }),
-    { headers: { 'content-type': 'application/octet-stream' } },
+    {
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-length': `${n}`,
+      },
+    },
   )
 }
