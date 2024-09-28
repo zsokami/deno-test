@@ -3,8 +3,11 @@ import { accepts, acceptsEncodings, acceptsLanguages } from '@std/http/negotiati
 
 export const handler: Handler = (req) => {
   return Response.json({
-    accepts: accepts(req),
-    acceptsEncodings: acceptsEncodings(req),
-    acceptsLanguages: acceptsLanguages(req),
+    headers: Object.fromEntries(req.headers),
+    accepts: {
+      accepts: accepts(req),
+      acceptsEncodings: acceptsEncodings(req),
+      acceptsLanguages: acceptsLanguages(req),
+    },
   })
 }

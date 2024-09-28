@@ -1,4 +1,7 @@
 export type Handler = (
   req: Request,
-  info: Deno.ServeHandlerInfo & { addr: Deno.NetAddr },
+  info: {
+    remoteAddr: Deno.NetAddr
+    addr: Deno.NetAddr
+  },
 ) => Response | Promise<Response> | undefined | Promise<undefined>
