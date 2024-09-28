@@ -10,9 +10,6 @@ export const handler: Handler = (req) => {
   return new Response(
     new ReadableStream({
       pull(controller) {
-        if (!controller.desiredSize || controller.desiredSize <= 0) {
-          console.log(controller.desiredSize)
-        }
         if (controller.desiredSize === null) return
         do {
           if ((n -= bufsize) >= 0) {
