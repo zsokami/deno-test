@@ -126,12 +126,12 @@ const { addr } = Deno.serve({
       hostname = `[${hostname}]`
     }
     if (certPath) {
-      console.log(`Listening on https://${hostname}:${port}`)
+      console.log(`Listening on https://${hostname}:${port}/`)
       if (port === 443) {
         httpRedirectToHTTPS()
       }
     } else {
-      console.log(`Listening on http://${hostname}:${port}`)
+      console.log(`Listening on http://${hostname}:${port}/`)
     }
   },
   onError(e) {
