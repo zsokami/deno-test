@@ -50,11 +50,13 @@ function isFile(path: string) {
   }
 }
 
+const certPath = Deno.env.get('CERT')
+const keyPath = Deno.env.get('KEY')
 const { addr } = Deno.serve({
   hostname: Deno.env.get('IP'),
   port: Number(Deno.env.get('PORT')) || undefined,
-  cert: Deno.env.get('CERT'),
-  key: Deno.env.get('KEY'),
+  cert: certPath && Deno.readTextFileSync(certPath),
+  key: keyPath && Deno.readTextFileSync(keyPath),
   onError(e) {
     console.error(e)
     return new Response('500 Internal Server Error', { status: 500 })
