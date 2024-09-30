@@ -103,8 +103,11 @@ const defaultHandler: Handler = (req) => {
   }
 }
 
+let httpServer: Deno.HttpServer | null = null
+
 function httpRedirectToHTTPS() {
-  Deno.serve({
+  if (httpServer) return
+  httpServer = Deno.serve({
     hostname: Deno.env.get('IP'),
     port: 80,
   }, (req) => {
