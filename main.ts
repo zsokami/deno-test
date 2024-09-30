@@ -53,6 +53,8 @@ function isFile(path: string) {
 const { addr } = Deno.serve({
   hostname: Deno.env.get('IP'),
   port: Number(Deno.env.get('PORT')) || undefined,
+  cert: Deno.env.get('CERT'),
+  key: Deno.env.get('KEY'),
   onError(e) {
     console.error(e)
     return new Response('500 Internal Server Error', { status: 500 })
