@@ -188,11 +188,13 @@ function serve() {
 
 let server: Deno.HttpServer | null = serve()
 
-Deno.addSignalListener('SIGHUP', async () => {
-  if (!server) return
-  console.log('Reloading...')
-  const promise = server.shutdown()
-  server = null
-  await promise
-  server = serve()
-})
+if (Deno.build.os !== 'windows') {
+  Deno.addSignalListener('SIGHUP', async () => {
+    if (!server) return
+    console.log('Reloading...')
+    const promise = server.shutdown()
+    server = null
+    await promise
+    server = serve()
+  })
+}
