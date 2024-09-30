@@ -116,11 +116,17 @@ function httpRedirectToHTTPS() {
 
 const certPath = Deno.env.get('CERT')
 const keyPath = Deno.env.get('KEY')
-const { addr } = Deno.serve({
+
+const options: {
+  hostname?: string
+  port?: number
+  onListen?: (localAddr: Deno.NetAddr) => void
+  onError?: (error: unknown) => Response | Promise<Response>
+  cert?: string
+  key?: string
+} = {
   hostname: Deno.env.get('IP'),
   port: Number(Deno.env.get('PORT')) || undefined,
-  cert: certPath && Deno.readTextFileSync(certPath),
-  key: keyPath && Deno.readTextFileSync(keyPath),
   onListen({ hostname, port }) {
     if (hostname.includes(':')) {
       hostname = `[${hostname}]`
@@ -138,7 +144,9 @@ const { addr } = Deno.serve({
     console.error(e)
     return new Response('500 Internal Server Error', { status: 500 })
   },
-}, async (req, { remoteAddr }) => {
+}
+
+const handler: Deno.ServeHandler = async (req, info) => {
   const url = new URL(req.url)
   const key = url.pathname.match(/[^/]+/)?.[0]
   let handler
@@ -150,7 +158,7 @@ const { addr } = Deno.serve({
   } else {
     handler = defaultHandler
   }
-  let resp = await handler(req, { remoteAddr, addr })
+  let resp = await handler(req, info)
   if (!resp) {
     resp = new Response('404 Not Found', { status: 404 })
   }
@@ -170,4 +178,21 @@ const { addr } = Deno.serve({
     resp = new Response(resp.body, { status: resp.status, statusText: resp.statusText, headers })
   }
   return resp
+}
+
+function serve() {
+  options.cert = certPath && Deno.readTextFileSync(certPath)
+  options.key = keyPath && Deno.readTextFileSync(keyPath)
+  return Deno.serve(options, handler)
+}
+
+let server: Deno.HttpServer | null = serve()
+
+Deno.addSignalListener('SIGHUP', async () => {
+  if (!server) return
+  console.log('Reloading...')
+  const promise = server.shutdown()
+  server = null
+  await promise
+  server = serve()
 })
