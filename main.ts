@@ -18,6 +18,10 @@ const handlerMap: Map<string, string | Handler> = new Map([
 const i18nDir = 'i18n'
 const webrootDir = 'webroot'
 
+const defaultHeaders: [string, string][] = [
+  ['strict-transport-security', 'max-age=31536000'],
+]
+
 const _contentTypeCache: Record<string, string> = Object.create(null)
 const contentType: typeof _contentType = (ext) => {
   return _contentTypeCache[ext] ?? (_contentTypeCache[ext] = _contentType(ext) ?? '')
@@ -50,6 +54,66 @@ function isFile(path: string) {
   }
 }
 
+const defaultHandler: Handler = (req) => {
+  const url = new URL(req.url)
+
+  if (Date.now() >= langsNextUpdate) {
+    langs = new Set([...Deno.readDirSync(i18nDir)].map(({ name }) => name.split('.')[0]))
+    langsNextUpdate = Date.now() + 300000
+  }
+
+  const path = pathFrom(url)
+
+  if (!path || langs.has(path)) {
+    if (url.pathname !== `/${path}`) {
+      return Response.redirect(new URL(`/${path}`, url), 301)
+    }
+    const lang = path || acceptsLanguages(req, ...langs) || 'en'
+    const file = Deno.openSync(`${webrootDir}/${lang}.html`)
+    return new Response(file.readable, {
+      headers: {
+        'content-type': contentType('.html'),
+        'content-length': `${file.statSync().size}`,
+      },
+    })
+  }
+
+  const realPath = `${webrootDir}/${path}`
+  if (isFile(realPath)) {
+    let lang
+    if (path.endsWith('.html') && langs.has(lang = path.slice(0, -5))) {
+      return Response.redirect(new URL(`/${lang}`, url), 301)
+    }
+    const normalizedURL = pathTo(path, new URL(url))
+    if (url.pathname !== normalizedURL.pathname) {
+      return Response.redirect(normalizedURL, 301)
+    }
+
+    const headers: Record<string, string> = {}
+    if (path.split('/').every((p) => p[0] !== '.')) {
+      headers['cache-control'] = 'public, max-age=31536000'
+    }
+    const type = contentType(extname(path))
+    if (type) {
+      headers['content-type'] = type
+    }
+    const file = Deno.openSync(realPath)
+    headers['content-length'] = `${file.statSync().size}`
+    return new Response(file.readable, { headers })
+  }
+}
+
+function httpRedirectToHTTPS() {
+  Deno.serve({
+    hostname: Deno.env.get('IP'),
+    port: 80,
+  }, (req) => {
+    const url = new URL(req.url)
+    url.protocol = 'https'
+    return Response.redirect(url, 301)
+  })
+}
+
 const certPath = Deno.env.get('CERT')
 const keyPath = Deno.env.get('KEY')
 const { addr } = Deno.serve({
@@ -57,6 +121,19 @@ const { addr } = Deno.serve({
   port: Number(Deno.env.get('PORT')) || undefined,
   cert: certPath && Deno.readTextFileSync(certPath),
   key: keyPath && Deno.readTextFileSync(keyPath),
+  onListen({ hostname, port }) {
+    if (hostname.includes(':')) {
+      hostname = `[${hostname}]`
+    }
+    if (certPath) {
+      console.log(`Listening on https://${hostname}:${port}`)
+      if (port === 443) {
+        httpRedirectToHTTPS()
+      }
+    } else {
+      console.log(`Listening on http://${hostname}:${port}`)
+    }
+  },
   onError(e) {
     console.error(e)
     return new Response('500 Internal Server Error', { status: 500 })
@@ -70,55 +147,27 @@ const { addr } = Deno.serve({
       handler = (await import(`./${handler}`)).handler as Handler
       handlerMap.set(key, handler)
     }
-    const resp = await handler(req, { remoteAddr, addr })
-    if (resp instanceof Response) {
-      return resp
-    }
   } else {
-    if (Date.now() >= langsNextUpdate) {
-      langs = new Set([...Deno.readDirSync(i18nDir)].map(({ name }) => name.split('.')[0]))
-      langsNextUpdate = Date.now() + 300000
-    }
-
-    const path = pathFrom(url)
-
-    if (!path || langs.has(path)) {
-      if (url.pathname !== `/${path}`) {
-        return Response.redirect(new URL(`/${path}`, url), 301)
-      }
-      const lang = path || acceptsLanguages(req, ...langs) || 'en'
-      const file = Deno.openSync(`${webrootDir}/${lang}.html`)
-      return new Response(file.readable, {
-        headers: {
-          'content-type': contentType('.html'),
-          'content-length': `${file.statSync().size}`,
-        },
-      })
-    }
-
-    const realPath = `${webrootDir}/${path}`
-    if (isFile(realPath)) {
-      let lang
-      if (path.endsWith('.html') && langs.has(lang = path.slice(0, -5))) {
-        return Response.redirect(new URL(`/${lang}`, url), 301)
-      }
-      const normalizedURL = pathTo(path, new URL(url))
-      if (url.pathname !== normalizedURL.pathname) {
-        return Response.redirect(normalizedURL, 301)
-      }
-
-      const headers: Record<string, string> = {}
-      if (path.split('/').every((p) => p[0] !== '.')) {
-        headers['cache-control'] = 'public, max-age=31536000'
-      }
-      const type = contentType(extname(path))
-      if (type) {
-        headers['content-type'] = type
-      }
-      const file = Deno.openSync(realPath)
-      headers['content-length'] = `${file.statSync().size}`
-      return new Response(file.readable, { headers })
-    }
+    handler = defaultHandler
   }
-  return new Response('404 Not Found', { status: 404 })
+  let resp = await handler(req, { remoteAddr, addr })
+  if (!resp) {
+    resp = new Response('404 Not Found', { status: 404 })
+  }
+  try {
+    for (const [k, v] of defaultHeaders) {
+      if (!resp.headers.has(k)) {
+        resp.headers.set(k, v)
+      }
+    }
+  } catch {
+    const headers = [...resp.headers]
+    for (const h of defaultHeaders) {
+      if (!resp.headers.has(h[0])) {
+        headers.push(h)
+      }
+    }
+    resp = new Response(resp.body, { status: resp.status, statusText: resp.statusText, headers })
+  }
+  return resp
 })
