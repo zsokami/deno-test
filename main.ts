@@ -149,7 +149,7 @@ const options: {
   },
 }
 
-const handler: Deno.ServeHandler = async (req, info) => {
+const handler: Deno.ServeHandler<Deno.NetAddr> = async (req, info) => {
   const url = new URL(req.url)
   const key = url.pathname.match(/[^/]+/)?.[0]
   let handler
