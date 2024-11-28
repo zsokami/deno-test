@@ -45,7 +45,6 @@ function resolvePath(path: string, parent = '') {
   let files = dirs[fullDir]
   if (!files) {
     if (isFile(`${inDir}/${fullPath}`)) return [path, dir, base, name, ext]
-    new URLSearchParams().entries
     files = dirs[dir] = Object.fromEntries(
       [...Deno.readDirSync(`${inDir}/${fullDir}`)]
         .filter(({ isFile }) => isFile)
