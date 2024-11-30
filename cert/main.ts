@@ -15,7 +15,8 @@ export const handler: Handler = async (req) => {
       socket.on('error', reject)
     })
     return Response.json(cert)
-  } catch {
+  } catch (e) {
+    console.error(e)
     return new Response('500 Error', { status: 500 })
   }
 }
