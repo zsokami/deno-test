@@ -13,6 +13,7 @@ const handlerMap: Map<string, string | Handler> = new Map([
   ['fetch', 'fetch/main.ts'],
   ['event-stream', 'event-stream/main.ts'],
   ['d', 'd/main.ts'],
+  ['cert', 'cert/main.ts'],
 ])
 
 const i18nDir = 'i18n'
